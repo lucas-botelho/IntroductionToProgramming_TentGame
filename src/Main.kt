@@ -1,6 +1,6 @@
 fun main() {
     var userOption :Int?
-    var isInvalidInput = false
+    var isInvalidInput = false // False
 
     do {
         println(criaMenu())
