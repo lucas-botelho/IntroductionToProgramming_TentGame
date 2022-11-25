@@ -1,12 +1,12 @@
 fun main() {
     var userOption :Int?
-    var isInvalidInput = false // False
+    var isInvalidInput = false
 
     do {
         println(criaMenu())
-        userOption = readln().toIntOrNull()
+        userOption = readln().toIntOrNull() ?: -1
 
-        isInvalidInput = userOption != null && (userOption != 0 && userOption != 1)
+        isInvalidInput = userOption.digitToChar() !in "01"
 
         if (isInvalidInput) {
             println("Opcao invalida\n")
@@ -19,9 +19,9 @@ fun main() {
 
         do {
             println("Quantas linhas?")
-            totalLines = readln().toIntOrNull()
+            totalLines = readln().toIntOrNull() ?: -1
 
-            isInvalidInput = totalLines == null || totalLines <= 0
+            isInvalidInput = totalLines <= 0
 
             if (isInvalidInput) {
                 println("Opcao invalida\n")
@@ -34,5 +34,5 @@ fun main() {
 }
 
 fun criaMenu(): String {
-    return "Bem vindo ao jogo das tendas\n\n" + "1 - Novo jogo\n" + "0 - Sair"
+    return "\nBem vindo ao jogo das tendas\n\n" + "1 - Novo jogo\n" + "0 - Sair\n"
 }
