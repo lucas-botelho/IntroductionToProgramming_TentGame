@@ -162,3 +162,11 @@ fun validaDataNascimento(data: String?): String? {
 
     return result
 }
+
+fun validaTamanhoMapa(numLinhas :Int, numColunas :Int): Boolean{
+    return true
+}
+
+fun processaCoordenadas(coordenadasStr: String?, numLines: Int, numColumns: Int): Boolean{
+    return true
+}
