@@ -66,7 +66,12 @@ fun GetUserBoardRowsSettings(requestText: String, errorText: String): Int {
     return rows ?: 0
 }
 
-fun criaTerreno(numLinhas: Int, numColunas: Int, mostraLegendaHorizontal: Boolean = true, mostraLegendaVertical: Boolean = true): String {
+fun criaTerreno(
+    numLinhas: Int,
+    numColunas: Int,
+    mostraLegendaHorizontal: Boolean = true,
+    mostraLegendaVertical: Boolean = true
+): String {
     var lineCount = 1
     var columnCount = 1
     var boardText = ""
@@ -84,12 +89,12 @@ fun criaTerreno(numLinhas: Int, numColunas: Int, mostraLegendaHorizontal: Boolea
             var isFirstColumn = columnCount == 0
             var isLastColumn = columnCount == numColunas
             if (isFirstColumn) {
-                boardText += when(isSingleDigitLine){
+                boardText += when (isSingleDigitLine) {
                     true -> " ${lineCount}|"
                     false -> "${lineCount}|"
                 }
             } else {
-                boardText += when(isLastColumn){
+                boardText += when (isLastColumn) {
                     true -> " $tentChar"
                     false -> "   |"
                 }
@@ -119,49 +124,40 @@ fun criaLegendaHorizontal(numColunas: Int): String {
 
 fun validaDataNascimento(data: String?): String? {
     var result: String? = "Data invalida"
+    var isCorrectDateFormat = data != null && data.length == 10 && data[2] == '-' && data[5] == '-'
 
-    if (data != null && data.length == 10) {
+    if (data != null && isCorrectDateFormat) {
         val day = "${data[0]}${data[1]}".toIntOrNull()
         val month = "${data[3]}${data[4]}".toIntOrNull()
         val year = "${data[6]}${data[7]}${data[8]}${data[9]}".toIntOrNull()
 
-        var isCorrectDateFormat = data[2] == '-' && data[5] == '-'
-        if (!isCorrectDateFormat || day == null || month == null || year == null) {
-            return result
-        }
-
-        val isUnderAge = year <= 2004 && month >= 11
-        if (isUnderAge) {
-            result = "Menor de idade nao pode jogar"
-        }
-
-        val isThirtyOneDaysMonth =
-            month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12
-        if (isThirtyOneDaysMonth) {
-            if (day in 1..31) {
-                isCorrectDateFormat = true
+        if (day != null && month != null && year != null && year <= 2022) {
+            val isUnderAge = year > 2004 || (year == 2004 && month >= 11)
+            if (isUnderAge) {
+                result = "Menor de idade nao pode jogar"
+            } else {
+                val isFebruary = month == 2
+                if (isFebruary) {
+                    val isLeapYear = ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)
+                    isCorrectDateFormat = when {
+                        isLeapYear && day in 1..29 -> true
+                        !isLeapYear && day in 1..28 -> true
+                        else -> false
+                    }
+                } else {
+                    val isThirtyOneDaysMonth = month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12
+                    isCorrectDateFormat = when {
+                        isThirtyOneDaysMonth && day in 1..31 -> true
+                        !isThirtyOneDaysMonth && day in 1..30 -> true
+                        else -> false
+                    }
+                }
             }
         }
+    }
 
-        val isFebruary = month == 2
-        if (isFebruary) {
-            val isLeapYear = ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)
-            if (isLeapYear && day in 1..29) {
-                isCorrectDateFormat = true
-            }
-            if (day in 1..28) {
-                isCorrectDateFormat = true
-            }
-        }
-
-        val isThirtyDaysMonth = month == 4 || month == 6 || month == 9 || month == 11
-        if (isThirtyDaysMonth && day in 1..30) {
-            isCorrectDateFormat = true
-        }
-
-        if (isCorrectDateFormat) {
-            result = null
-        }
+    if (isCorrectDateFormat) {
+        result = null
     }
 
     return result
