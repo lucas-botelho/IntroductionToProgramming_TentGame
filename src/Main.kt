@@ -1,13 +1,24 @@
 fun main() {
+    var userOption :Int?
 
-    val userOption = DrawMenu()
+    do {
+        userOption = DrawMenu()
+
+        println("Qual a sua data de nascimento? (dd-mm-yyyy)")
+        val birthDate = readln()
+
+        var birthDateText = validaDataNascimento(birthDate)
+
+        if (birthDateText != null) {
+            println(birthDateText)
+        }
+
+    }while (birthDateText != null)
 
     if (userOption == 1) {
-
         val totalLines = GetUserBoardRowsSettings("Quantas linhas?", "Opcao invalida\n")
         val totalColumns = GetUserBoardRowsSettings("Quantas colunas?", "Opcao invalida\n")
-
-       println(criaTerreno(totalLines, totalColumns, true, true))
+       println(criaTerreno(totalLines, totalColumns))
     }
 }
 
@@ -100,43 +111,52 @@ fun criaLegendaHorizontal(numColunas: Int): String {
     return "$legendaHorizontal\n"
 }
 
-/*fun validaDataNascimento(data: String?) : String?{
-    var resultado: String? = "Data invalida"
+fun validaDataNascimento(data: String?) : String?{
+    var result: String? = "Data invalida"
 
     if(data != null && data.length == 10){
-        var dia = (data[0].toString() + data[1].toString()).toInt()
-        var mes = (data[3].toString() + data[4].toString()).toInt()
-        var ano = (data[6].toString() + data[7].toString() + data[8].toString() + data[9].toString()).toInt()
+        val day = "${data[0]}${data[1]}".toInt()
+        val month = "${data[3]}${data[4]}".toInt()
+        val year = "${data[6]}${data[7]}${data[8]}${data[9]}".toInt()
 
-        if (ano >= 2004)
+        var isCorrectDateFormat = data[2] == '-' && data[5] == '-'
+        if(!isCorrectDateFormat) {
+            return result
+        }
 
-        var dataValida = false
-        if(mes in 1..12){
-            if (mes == 1 || mes == 3 || mes == 5 || mes == 7 || mes == 8 || mes == 10 || mes == 12){
-                if (dia in 1..31){
-                    dataValida = true
-                }
-            }else if (mes == 4 || mes == 6 || mes == 9 || mes == 11){
-                if (dia in 1..30){
-                    dataValida = true
-                }
-            }else{
-                if(((ano % 4 == 0 && ano % 100 != 0) || ano % 400 == 0) && dia in 1..29){
-                    dataValida = true
-                }else{
-                    if (dia in 1..28){
-                        dataValida = true
-                    }
-                }
+        val isUnderAge = year <= 2004 && month >= 11
+        if(isUnderAge){
+            isCorrectDateFormat = false
+            result = "Menor de idade nao pode jogar"
+        }
+
+        val isThirtyOneDaysMonth = month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12
+        if (isThirtyOneDaysMonth) {
+            if (day in 1..31) {
+                isCorrectDateFormat = true
             }
         }
-        if(dataValida){
-            resultado = null
-            if(ano > 2004 || (ano == 2004 && mes >= 11)){
-                resultado = "Menor de idade nao pode jogar"
+
+        val isFebruary = month == 2
+        if (isFebruary){
+            val isLeapYear = ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)
+            if (isLeapYear && day in 1..29) {
+                isCorrectDateFormat = true
             }
+            if (day in 1..28) {
+                isCorrectDateFormat = true
+            }
+        }
+
+        val isThirtyDaysMonth = month == 4 || month == 6 || month == 9 || month == 11
+        if (isThirtyDaysMonth && day in 1..30) {
+                isCorrectDateFormat = true
+        }
+
+        if(isCorrectDateFormat){
+            result = null
         }
     }
 
-    return resultado
-}*/
+    return result
+}
