@@ -1,34 +1,32 @@
 fun main() {
-    var userOption :Int?
+    var userOption: Int?
     var allUserInputsAreValid = true
     var totalLines = 0
     var totalColumns = 0
-    var birthDate :String?
-    var birthDateText :String?
+    var birthDate: String?
+    var birthDateText: String?
+
+    val constInvalidOption = "Resposta invalida"
 
     do {
-        userOption = DrawMenu()
+        userOption = drawMenu()
 
         if (userOption == 1) {
-            println("Qual a sua data de nascimento? (dd-mm-yyyy)")
-            birthDate = readln()
-            birthDateText = validaDataNascimento(birthDate)
-
-            //!= null means it's not a valid date
-            if (birthDateText != null) {
-                println(birthDateText)
-                allUserInputsAreValid = false
-            }
-
             if (allUserInputsAreValid) {
-                totalLines = GetUserBoardRowsSettings("Quantas linhas?", "Opcao invalida\n")
-                totalColumns = GetUserBoardRowsSettings("Quantas colunas?", "Opcao invalida\n")
+                totalLines = getUserBoardRowsSettings("Quantas linhas?", constInvalidOption)
+                totalColumns = getUserBoardRowsSettings("Quantas colunas?", constInvalidOption)
 
                 allUserInputsAreValid = validaTamanhoMapa(totalLines, totalColumns)
-                if (allUserInputsAreValid) {
-                    println(criaTerreno(totalLines, totalColumns))
-                }else{
-                    println("Terreno invalido")
+               if (allUserInputsAreValid) {
+                    println("Qual a sua data de nascimento? (dd-mm-yyyy)")
+                    birthDate = readln()
+                    birthDateText = validaDataNascimento(birthDate)
+
+                    //!= null means it's not a valid date
+                    if (birthDateText != null) {
+                        print(birthDateText)
+                        allUserInputsAreValid = false
+                    }
                 }
             }
         }
@@ -36,13 +34,17 @@ fun main() {
         allUserInputsAreValid = allUserInputsAreValid || userOption == 0
     } while (!allUserInputsAreValid)
 
-    println("Coordenadas da tenda? (ex: 1,B)")
-    var coord = readln()
-    var isValidCoord = processaCoordenadas(coord, totalLines, totalColumns)
-
+    if (userOption != 0) {
+        println(criaTerreno(totalLines, totalColumns))
+        println("Coordenadas da tenda? (ex: 1,B)")
+        var coord = readln()
+        if(!processaCoordenadas(coord, totalLines, totalColumns)){
+            print("Coordenadas invalidas")
+        }
+    }
 }
 
-fun DrawMenu(): Int? {
+fun drawMenu(): Int? {
     var userOption: Int?
     var isInvalidInput = false
 
@@ -53,7 +55,7 @@ fun DrawMenu(): Int? {
         isInvalidInput = userOption < 0
 
         if (isInvalidInput) {
-            println("Opcao invalida\n")
+            print("Opcao invalida")
         }
     } while (isInvalidInput)
 
@@ -61,10 +63,10 @@ fun DrawMenu(): Int? {
 }
 
 fun criaMenu(): String {
-    return "\nBem vindo ao jogo das tendas\n\n" + "1 - Novo jogo\n" + "0 - Sair\n"
+    return "\nBem vindo ao jogo das tendas\n\n1 - Novo jogo\n0 - Sair\n"
 }
 
-fun GetUserBoardRowsSettings(requestText: String, errorText: String): Int {
+fun getUserBoardRowsSettings(requestText: String, errorText: String): Int {
     var rows: Int?
     var isInvalidInput = false
 
@@ -75,7 +77,7 @@ fun GetUserBoardRowsSettings(requestText: String, errorText: String): Int {
         isInvalidInput = rows <= 0
 
         if (isInvalidInput) {
-            println(errorText)
+            print(errorText)
         }
     } while (isInvalidInput)
 
@@ -89,25 +91,25 @@ fun criaTerreno(
     mostraLegendaVertical: Boolean = true
 ): String {
     var lineCount = 1
-    var columnCount = 1
+    var columnCount :Int
     var boardText = ""
     val tentChar = '\u25B3'
 
     if (mostraLegendaHorizontal) {
-        boardText += criaLegendaHorizontal(numColunas)
+        boardText += "   | ${criaLegendaHorizontal(numColunas)}\n"
     }
 
     while (lineCount <= numLinhas) {
-        columnCount = 0
+        columnCount = 1
         var isSingleDigitLine = lineCount in 1..9
 
         while (columnCount <= numColunas) {
-            var isFirstColumn = columnCount == 0
+            var isFirstColumn = columnCount == 1
             var isLastColumn = columnCount == numColunas
-            if (isFirstColumn) {
+            if (isFirstColumn && mostraLegendaVertical) {
                 boardText += when (isSingleDigitLine) {
-                    true -> " ${lineCount}|"
-                    false -> "${lineCount}|"
+                    true -> " $lineCount |   |"
+                    false -> "$lineCount |   |"
                 }
             } else {
                 boardText += when (isLastColumn) {
@@ -117,7 +119,11 @@ fun criaTerreno(
             }
             columnCount++
         }
-        boardText += "\n"
+
+        if(lineCount != numLinhas) {
+            boardText += "\n"
+        }
+
         lineCount++
     }
 
@@ -126,20 +132,27 @@ fun criaTerreno(
 
 fun criaLegendaHorizontal(numColunas: Int): String {
     var columnCount = 1
-    var legendaHorizontal = " "
+    var legendaHorizontal = ""
     var rowChar = 'A'
 
     while (columnCount <= numColunas) {
-        legendaHorizontal += " | $rowChar"
+        legendaHorizontal += when (columnCount){
+            1 -> "$rowChar "
+            numColunas -> "| $rowChar"
+            else -> "| $rowChar "
+        }
         rowChar++
         columnCount++
     }
-    return "$legendaHorizontal\n"
+    return "$legendaHorizontal"
 }
 
 fun validaDataNascimento(data: String?): String? {
     var result: String? = "Data invalida"
     var isCorrectDateFormat = data != null && data.length == 10 && data[2] == '-' && data[5] == '-'
+
+    //if (data == "")
+    //    return null
 
     if (data != null && isCorrectDateFormat) {
         val day = "${data[0]}${data[1]}".toIntOrNull()
@@ -147,9 +160,9 @@ fun validaDataNascimento(data: String?): String? {
         val year = "${data[6]}${data[7]}${data[8]}${data[9]}".toIntOrNull()
 
         if (day != null && month != null && year != null && year <= 2022) {
-            val isUnderAge = year > 2004 || (year == 2004 && month >= 11)
+            val isUnderAge = year > 2004 || (year == 2004 && month >= 11 && day >= 1)
             if (isUnderAge) {
-                result = "Menor de idade nao pode jogar"
+                return "Menor de idade nao pode jogar"
             } else {
                 val isFebruary = month == 2
                 if (isFebruary) {
@@ -196,8 +209,8 @@ fun processaCoordenadas(coordenadasStr: String?, numLines: Int, numColumns: Int)
         val mapHeaderLabel = criaLegendaHorizontal(numColumns)
         val lastCharCode = mapHeaderLabel[mapHeaderLabel.length-1].code
 
-        val isValidLineCoord = coordenadasStr[0].digitToIntOrNull() != null && coordenadasStr[0].digitToIntOrNull() in 0..numLines
-        val isValidColumnCoord = coordenadasStr[2].code in 'A'.code..lastCharCode
+        val isValidLineCoord = coordenadasStr[0].digitToIntOrNull() != null && coordenadasStr[0].digitToIntOrNull() in 1..numLines
+        val isValidColumnCoord = coordenadasStr[2].uppercaseChar().code in 'A'.code..lastCharCode
 
         isValidCoord = isValidLineCoord && isValidColumnCoord
     }
