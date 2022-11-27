@@ -1,13 +1,18 @@
 fun main() {
-    var userOption: Int?
+    var userOption :Int?
     var allUserInputsAreValid = true
+    var totalLines = 0
+    var totalColumns = 0
+    var birthDate :String?
+    var birthDateText :String?
+
     do {
         userOption = DrawMenu()
 
         if (userOption == 1) {
             println("Qual a sua data de nascimento? (dd-mm-yyyy)")
-            val birthDate = readln()
-            var birthDateText = validaDataNascimento(birthDate)
+            birthDate = readln()
+            birthDateText = validaDataNascimento(birthDate)
 
             //!= null means it's not a valid date
             if (birthDateText != null) {
@@ -16,14 +21,25 @@ fun main() {
             }
 
             if (allUserInputsAreValid) {
-                val totalLines = GetUserBoardRowsSettings("Quantas linhas?", "Opcao invalida\n")
-                val totalColumns = GetUserBoardRowsSettings("Quantas colunas?", "Opcao invalida\n")
-                println(criaTerreno(totalLines, totalColumns))
+                totalLines = GetUserBoardRowsSettings("Quantas linhas?", "Opcao invalida\n")
+                totalColumns = GetUserBoardRowsSettings("Quantas colunas?", "Opcao invalida\n")
+
+                allUserInputsAreValid = validaTamanhoMapa(totalLines, totalColumns)
+                if (allUserInputsAreValid) {
+                    println(criaTerreno(totalLines, totalColumns))
+                }else{
+                    println("Terreno invalido")
+                }
             }
         }
 
         allUserInputsAreValid = allUserInputsAreValid || userOption == 0
     } while (!allUserInputsAreValid)
+
+    println("Coordenadas da tenda? (ex: 1,B)")
+    var coord = readln()
+    var isValidCoord = processaCoordenadas(coord, totalLines, totalColumns)
+
 }
 
 fun DrawMenu(): Int? {
@@ -110,12 +126,11 @@ fun criaTerreno(
 
 fun criaLegendaHorizontal(numColunas: Int): String {
     var columnCount = 1
-    var legendaHorizontal = "  "
+    var legendaHorizontal = " "
     var rowChar = 'A'
 
     while (columnCount <= numColunas) {
-        legendaHorizontal += "| $rowChar "
-
+        legendaHorizontal += " | $rowChar"
         rowChar++
         columnCount++
     }
@@ -145,7 +160,8 @@ fun validaDataNascimento(data: String?): String? {
                         else -> false
                     }
                 } else {
-                    val isThirtyOneDaysMonth = month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12
+                    val isThirtyOneDaysMonth =
+                        month == 1 || month == 3 || month == 5 || month == 7 || month == 8 || month == 10 || month == 12
                     isCorrectDateFormat = when {
                         isThirtyOneDaysMonth && day in 1..31 -> true
                         !isThirtyOneDaysMonth && day in 1..30 -> true
@@ -163,10 +179,28 @@ fun validaDataNascimento(data: String?): String? {
     return result
 }
 
-fun validaTamanhoMapa(numLinhas :Int, numColunas :Int): Boolean{
-    return true
+fun validaTamanhoMapa(numLinhas: Int, numColunas: Int): Boolean {
+
+    return when (numColunas) {
+        6 -> numLinhas == 5 || numLinhas == 6
+        8 -> numLinhas == 8 || numLinhas == 10
+        10 -> numLinhas == 8 || numLinhas == 10
+        else -> false
+    }
 }
 
-fun processaCoordenadas(coordenadasStr: String?, numLines: Int, numColumns: Int): Boolean{
-    return true
+fun processaCoordenadas(coordenadasStr: String?, numLines: Int, numColumns: Int): Boolean {
+
+    var isValidCoord = false
+    if (coordenadasStr != null && coordenadasStr.length == 3 ){
+        val mapHeaderLabel = criaLegendaHorizontal(numColumns)
+        val lastCharCode = mapHeaderLabel[mapHeaderLabel.length-1].code
+
+        val isValidLineCoord = coordenadasStr[0].digitToIntOrNull() != null && coordenadasStr[0].digitToIntOrNull() in 0..numLines
+        val isValidColumnCoord = coordenadasStr[2].code in 'A'.code..lastCharCode
+
+        isValidCoord = isValidLineCoord && isValidColumnCoord
+    }
+
+    return isValidCoord
 }
