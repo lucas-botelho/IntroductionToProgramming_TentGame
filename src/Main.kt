@@ -11,14 +11,22 @@ fun main() {
             val isValidMap = validaTamanhoMapa(totalLines, totalColumns)
             val isHardMap = totalLines == 10 && totalColumns == 10
             if (isValidMap && isHardMap) {
-                println("Qual a sua data de nascimento? (dd-mm-yyyy)")
-                val birthDate = readln()
-                //!= null means it's not a valid date
-                when (val birthDateText = validaDataNascimento(birthDate)){
-                    null -> drawGamingBoard(totalLines, totalColumns)
-                    else -> println(birthDateText)
-                }
+                do {
+                    println("Qual a sua data de nascimento? (dd-mm-yyyy)")
+                    val birthDate = readln()
+                    //!= null means it's not a valid date
+                    val birthDateText = validaDataNascimento(birthDate)
+                    when (birthDateText){
+                        null -> {
+                            println()
+                            drawGamingBoard(totalLines, totalColumns)
+                        }
+                        else -> println(birthDateText)
+                    }
+                } while (birthDateText != "Menor de idade nao pode jogar" && birthDateText != null)
+
             }else if (isValidMap){
+                println()
                 drawGamingBoard(totalLines, totalColumns)
             }
             else {
