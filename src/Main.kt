@@ -46,13 +46,12 @@ fun main() {
 
 fun drawMenu(): Int? {
     var userOption: Int?
-    var isInvalidInput = false
 
     do {
         println(criaMenu())
         userOption = readln().toIntOrNull() ?: -1
 
-        isInvalidInput = userOption < 0
+        var isInvalidInput = userOption < 0 || userOption > 1
 
         if (isInvalidInput) {
             print("Opcao invalida")
@@ -68,13 +67,12 @@ fun criaMenu(): String {
 
 fun getUserBoardRowsSettings(requestText: String, errorText: String): Int {
     var rows: Int?
-    var isInvalidInput = false
 
     do {
         println(requestText)
         rows = readln().toIntOrNull() ?: -1
 
-        isInvalidInput = rows <= 0
+        var isInvalidInput = rows <= 0
 
         if (isInvalidInput) {
             print(errorText)
@@ -144,7 +142,7 @@ fun criaLegendaHorizontal(numColunas: Int): String {
         rowChar++
         columnCount++
     }
-    return "$legendaHorizontal"
+    return legendaHorizontal
 }
 
 fun validaDataNascimento(data: String?): String? {
