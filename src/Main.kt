@@ -1,62 +1,51 @@
 fun main() {
-    var userOption: Int?
-    var allUserInputsAreValid = true
-    var totalLines = 0
-    var totalColumns = 0
-    var birthDate: String?
-    var birthDateText: String?
-
     val constInvalidOption = "Resposta invalida"
 
     do {
-        userOption = drawMenu()
+        val userOption = drawMenu()
+        if (userOption != null && userOption == 1) {
+            val totalLines = getUserBoardRowsSettings("Quantas linhas?", constInvalidOption)
+            val totalColumns = getUserBoardRowsSettings("Quantas colunas?", constInvalidOption)
 
-        if (userOption == 1) {
-            if (allUserInputsAreValid) {
-                totalLines = getUserBoardRowsSettings("Quantas linhas?", constInvalidOption)
-                totalColumns = getUserBoardRowsSettings("Quantas colunas?", constInvalidOption)
 
-                allUserInputsAreValid = validaTamanhoMapa(totalLines, totalColumns)
-               if (allUserInputsAreValid) {
-                    println("Qual a sua data de nascimento? (dd-mm-yyyy)")
-                    birthDate = readln()
-                    birthDateText = validaDataNascimento(birthDate)
-
-                    //!= null means it's not a valid date
-                    if (birthDateText != null) {
-                        print(birthDateText)
-                        allUserInputsAreValid = false
-                    }
+            val isValidMap = validaTamanhoMapa(totalLines, totalColumns)
+            val isHardMap = totalLines == 10 && totalColumns == 10
+            if (isValidMap && isHardMap) {
+                println("Qual a sua data de nascimento? (dd-mm-yyyy)")
+                val birthDate = readln()
+                //!= null means it's not a valid date
+                when (val birthDateText = validaDataNascimento(birthDate)){
+                    null -> drawGamingBoard(totalLines, totalColumns)
+                    else -> println(birthDateText)
                 }
+            }else if (isValidMap){
+                drawGamingBoard(totalLines, totalColumns)
+            }
+            else {
+                println("Terreno invalido")
             }
         }
-
-        allUserInputsAreValid = allUserInputsAreValid || userOption == 0
-    } while (!allUserInputsAreValid)
-
-    if (userOption != 0) {
-        println(criaTerreno(totalLines, totalColumns))
-        println("Coordenadas da tenda? (ex: 1,B)")
-        var coord = readln()
-        if(!processaCoordenadas(coord, totalLines, totalColumns)){
-            print("Coordenadas invalidas")
-        }
+    } while (userOption != 0)
+}
+fun drawGamingBoard(totalLines :Int, totalColumns :Int){
+    println(criaTerreno(totalLines, totalColumns))
+    println("Coordenadas da tenda? (ex: 1,B)")
+    val coord = readln()
+    if(!processaCoordenadas(coord, totalLines, totalColumns)){
+        print("Coordenadas invalidas")
     }
 }
 
 fun drawMenu(): Int? {
-    var userOption: Int?
-
-    do {
+    // do {
         println(criaMenu())
-        userOption = readln().toIntOrNull() ?: -1
+        val userOption: Int? = readln().toIntOrNull()
 
-        var isInvalidInput = userOption < 0 || userOption > 1
-
+        val isInvalidInput =  userOption == null || userOption !in 0..1
         if (isInvalidInput) {
-            print("Opcao invalida")
+            println("Opcao invalida")
         }
-    } while (isInvalidInput)
+    //} while (isInvalidInput)
 
     return userOption
 }
@@ -72,10 +61,10 @@ fun getUserBoardRowsSettings(requestText: String, errorText: String): Int {
         println(requestText)
         rows = readln().toIntOrNull() ?: -1
 
-        var isInvalidInput = rows <= 0
+        val isInvalidInput = rows <= 0
 
         if (isInvalidInput) {
-            print(errorText)
+            println(errorText)
         }
     } while (isInvalidInput)
 
@@ -99,11 +88,11 @@ fun criaTerreno(
 
     while (lineCount <= numLinhas) {
         columnCount = 1
-        var isSingleDigitLine = lineCount in 1..9
+        val isSingleDigitLine = lineCount in 1..9
 
         while (columnCount <= numColunas) {
-            var isFirstColumn = columnCount == 1
-            var isLastColumn = columnCount == numColunas
+            val isFirstColumn = columnCount == 1
+            val isLastColumn = columnCount == numColunas
             if (isFirstColumn && mostraLegendaVertical) {
                 boardText += when (isSingleDigitLine) {
                     true -> " $lineCount |   |"
@@ -157,7 +146,8 @@ fun validaDataNascimento(data: String?): String? {
         val month = "${data[3]}${data[4]}".toIntOrNull()
         val year = "${data[6]}${data[7]}${data[8]}${data[9]}".toIntOrNull()
 
-        if (day != null && month != null && year != null && year <= 2022) {
+        val isValidYear = year in 1901..2022
+        if (day != null && month != null && year != null && isValidYear) {
             val isUnderAge = year > 2004 || (year == 2004 && month >= 11 && day >= 1)
             if (isUnderAge) {
                 return "Menor de idade nao pode jogar"
