@@ -251,11 +251,9 @@ fun leTerrenoDoFicheiro(numLines: Int, numColumns: Int): Array<Array<String?>>
     while (coordIndex < boardFileSize)
     {
         val treeCoords = boardFile[coordIndex].split(',')
-        val line = treeCoords[0].toInt() ?: null
-        val column = treeCoords[1].toInt() ?: null
-        if(line != null&& column != null){
-            board[line][column] = "A"
-        }
+        val line = treeCoords[0].toInt()
+        val column = treeCoords[1].toInt()
+        board[line][column] = "A"
         coordIndex++
     }
 
