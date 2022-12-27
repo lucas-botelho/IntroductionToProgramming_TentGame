@@ -1,3 +1,5 @@
+import java.io.File
+
 fun main() {
     val constInvalidOption = "Resposta invalida"
 
@@ -212,4 +214,50 @@ fun processaCoordenadas(coordenadasStr: String?, numLines: Int, numColumns: Int)
     }
 
     return isValidCoord
+}
+
+
+fun leContadoresDoFicheiro(numLines: Int, numColumns: Int, verticais: Boolean): Array<Int?>
+{
+    val boardFile = ReadBoardFromFile(numLines, numColumns)
+
+    //0 is the position of vertical counters
+    //1 is the position of Horizontal counters
+    val countersFilePosition = if(verticais) { 0 } else { 1 }
+    val countersSplitAsStrings = boardFile[countersFilePosition].split(',')
+    val countersAsInts = arrayOfNulls<Int>(countersSplitAsStrings.size)
+
+    var countersIdx = 0
+    for (counter in countersSplitAsStrings) {
+        val counterValue = counter.toInt()
+        countersAsInts[countersIdx] = if(counterValue == 0) { null } else { counterValue }
+        countersIdx++
+    }
+
+    return countersAsInts
+}
+
+fun ReadBoardFromFile(numLines: Int, numColumns: Int): List<String> {
+    return File("./ficheiros-jogo-tendas-main/${numLines}x${numColumns}.txt").readLines()
+}
+
+fun leTerrenoDoFicheiro(numLines: Int, numColumns: Int): Array<Array<String?>>
+{
+    val boardFile = ReadBoardFromFile(numLines, numColumns)
+    val boardFileSize = boardFile.size
+    val board = Array(numLines){ arrayOfNulls<String>(numColumns) }
+
+    var coordIndex = 2 //2 because the first two lines are for counters
+    while (coordIndex < boardFileSize)
+    {
+        val treeCoords = boardFile[coordIndex].split(',')
+        val line = treeCoords[0].toInt() ?: null
+        val column = treeCoords[1].toInt() ?: null
+        if(line != null&& column != null){
+            board[line][column] = "A"
+        }
+        coordIndex++
+    }
+
+    return board
 }
