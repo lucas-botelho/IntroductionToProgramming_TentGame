@@ -4,7 +4,7 @@ fun main() {
     val constInvalidOption = "Resposta invalida"
 
     do {
-        val userOption = drawMenu()
+        val userOption = drawMenuAndGetUserOption()
         if (userOption != null && userOption == 1) {
             val totalLines = getUserBoardRowsSettings("Quantas linhas?", constInvalidOption)
             val totalColumns = getUserBoardRowsSettings("Quantas colunas?", constInvalidOption)
@@ -12,17 +12,16 @@ fun main() {
             val isHardMap = totalLines == 10 && totalColumns == 10
 
             if (isValidMap) {
-                if (isHardMap){
-                    do {
-                        val birthDateText = askBirthDate()
-                        if (birthDateText != null){
-                            println(birthDateText)
-                        }
-                    } while (birthDateText != "Menor de idade nao pode jogar" && birthDateText != null)
-                }
+                var birthDateText = if (isHardMap) { getUserBirthDateForHardMap() } else { null }
+                if (birthDateText == null) {
 
-                println()
-                drawBoard(totalLines, totalColumns)
+                    val terrainFromFile = leTerrenoDoFicheiro(totalLines, totalColumns)
+                    val verticalCountersFromFile = leContadoresDoFicheiro(totalLines, totalColumns, false)
+                    val horizontalCountersFromFile = leContadoresDoFicheiro(totalLines, totalColumns, true)
+
+                    println(criaTerreno(terrainFromFile, verticalCountersFromFile, horizontalCountersFromFile, true, true))
+                    val validatedCoords = processUserCoords(totalLines, totalColumns)
+                }
             }
             else {
                 println("Terreno invalido")
@@ -31,16 +30,7 @@ fun main() {
     } while (userOption != 0)
 }
 
-fun drawBoard(totalLines: Int, totalColumns: Int) {
-    println(criaTerreno(totalLines, totalColumns))
-    println("Coordenadas da tenda? (ex: 1,B)")
-    val coord = readln()
-    if (!processaCoordenadas(coord, totalLines, totalColumns)) {
-        print("Coordenadas invalidas")
-    }
-}
-
-fun drawMenu(): Int? {
+fun drawMenuAndGetUserOption(): Int? {
     // do {
     println(criaMenu())
     val userOption: Int? = readln().toIntOrNull()
@@ -84,7 +74,7 @@ fun criaTerreno(
     mostraLegendaVertical: Boolean
 ): String {
     var lineCount = 1
-    var boardText = ""
+    var boardText = "\n"
     val numColunas = terreno[0].size
     val numLinhas = terreno.size
     val threeEmptySpacesConst = "   "
@@ -188,26 +178,32 @@ fun validaTamanhoMapa(numLinhas: Int, numColunas: Int): Boolean {
     }
 }
 
-fun processaCoordenadas(coordenadasStr: String?, numLines: Int, numColumns: Int): Boolean {
-
-    var isValidCoord = false
-    if (coordenadasStr != null && coordenadasStr.length == 3) {
+fun processaCoordenadas(coordenadasStr: String?, numLines: Int, numColumns: Int):  Pair<Int,Int>?
+{
+    if (coordenadasStr != null && (coordenadasStr.length == 3 || coordenadasStr.length == 4)) {
         val mapHeaderLabel = criaLegendaHorizontal(numColumns)
         val lastCharCode = mapHeaderLabel[mapHeaderLabel.length - 1].code
+        val headerFirstCharCode = 'A'.code
+        val isValidLineCoord = coordenadasStr[0].digitToIntOrNull() != null && coordenadasStr[0].digitToIntOrNull() in 1..numLines
+        val isValidColumnCoord = coordenadasStr[2].uppercaseChar().code in headerFirstCharCode..lastCharCode
 
-        val isValidLineCoord =
-            coordenadasStr[0].digitToIntOrNull() != null && coordenadasStr[0].digitToIntOrNull() in 1..numLines
-        val isValidColumnCoord = coordenadasStr[2].uppercaseChar().code in 'A'.code..lastCharCode
-
-        isValidCoord = isValidLineCoord && isValidColumnCoord
+        if(isValidLineCoord && isValidColumnCoord){
+            return Pair(coordenadasStr[0].toString().toInt(), coordenadasStr[2].code - headerFirstCharCode)
+        }
     }
-
-    return isValidCoord
+    return null
 }
 
+fun mapHorizontalCoordToInt(coordCharCode :Int, lastCharCode :Int) :Int?{
+    if (lastCharCode >= coordCharCode){
+        return 'F'.code - 'A'.code
+    }
+
+    return null
+}
 
 fun leContadoresDoFicheiro(numLines: Int, numColumns: Int, verticais: Boolean): Array<Int?> {
-    val boardFile = ReadBoardFromFile(numLines, numColumns)
+    val boardFile = readBoardFromFile(numLines, numColumns)
 
     //0 is the position of vertical counters
     //1 is the position of Horizontal counters
@@ -233,12 +229,12 @@ fun leContadoresDoFicheiro(numLines: Int, numColumns: Int, verticais: Boolean): 
     return countersAsInts
 }
 
-fun ReadBoardFromFile(numLines: Int, numColumns: Int): List<String> {
+fun readBoardFromFile(numLines: Int, numColumns: Int): List<String> {
     return File("./ficheiros-jogo-tendas-main/${numLines}x${numColumns}.txt").readLines()
 }
 
 fun leTerrenoDoFicheiro(numLines: Int, numColumns: Int): Array<Array<String?>> {
-    val boardFile = ReadBoardFromFile(numLines, numColumns)
+    val boardFile = readBoardFromFile(numLines, numColumns)
     val boardFileSize = boardFile.size
     val board = Array(numLines) { arrayOfNulls<String>(numColumns) }
 
@@ -311,4 +307,28 @@ fun askBirthDate():String?{
     val birthDate = readln()
     //!= null means it's not a valid date
     return validaDataNascimento(birthDate)
+}
+
+fun getUserBirthDateForHardMap():String?{
+    var birthDateText :String? = null
+
+    do {
+        birthDateText = askBirthDate()
+        if (birthDateText != null){
+            println(birthDateText)
+        }
+    } while (birthDateText != "Menor de idade nao pode jogar" && birthDateText != null)
+
+    return birthDateText
+}
+
+fun processUserCoords(totalLines :Int, totalColumns :Int): Pair<Int, Int>? {
+    println("Coordenadas da tenda? (ex: 1,B)")
+    val coord = readln()
+    val validatedCoords = processaCoordenadas(coord, totalLines, totalColumns)
+    if (validatedCoords == null) {
+        print("Coordenadas invalidas")
+    }
+
+    return validatedCoords
 }
