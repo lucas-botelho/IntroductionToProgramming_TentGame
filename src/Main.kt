@@ -543,3 +543,35 @@ fun checkIfHasEntityWhenCenterCoords(terreno: Array<Array<String?>>, coords: Pai
 
     return hasTreeOnRight || hasTreeOnLeft || hasTreeOnTop || hasTreeOnBottom
 }
+
+fun contaTendasColuna(terreno: Array<Array<String?>>, coluna : Int) : Int {
+    var count = 0
+
+    for (row in terreno.indices){
+        for (col in terreno[row].indices){
+            if (col == coluna && terreno[row][col] == arrayTentChar){
+                count++
+            }
+
+        }
+    }
+
+    return count
+}
+
+fun contaTendasLinha(terreno: Array<Array<String?>>, linha : Int) : Int {
+    var count = 0
+
+    for (row in terreno.indices){
+        if (row == linha){
+            for (col in terreno[row].indices){
+                if (terreno[row][col] == arrayTentChar){
+                    count++
+                }
+            }
+        }
+
+    }
+
+    return count
+}
