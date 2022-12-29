@@ -12,12 +12,12 @@ fun main() {
             val isHardMap = totalLines == 10 && totalColumns == 10
 
             if (isValidMap) {
-                var birthDateText = if (isHardMap) { getUserBirthDateForHardMap() } else { null }
+                val birthDateText = if (isHardMap) { getUserBirthDateForHardMap() } else { null }
                 if (birthDateText == null) {
 
                     val terrainFromFile = leTerrenoDoFicheiro(totalLines, totalColumns)
-                    val verticalCountersFromFile = leContadoresDoFicheiro(totalLines, totalColumns, false)
-                    val horizontalCountersFromFile = leContadoresDoFicheiro(totalLines, totalColumns, true)
+                    val verticalCountersFromFile = leContadoresDoFicheiro(totalLines, totalColumns, true)
+                    val horizontalCountersFromFile = leContadoresDoFicheiro(totalLines, totalColumns, false)
 
                     println(criaTerreno(terrainFromFile, verticalCountersFromFile, horizontalCountersFromFile, true, true))
                     val validatedCoords = processUserCoords(totalLines, totalColumns)
@@ -31,7 +31,6 @@ fun main() {
 }
 
 fun drawMenuAndGetUserOption(): Int? {
-    // do {
     println(criaMenu())
     val userOption: Int? = readln().toIntOrNull()
 
@@ -39,7 +38,6 @@ fun drawMenuAndGetUserOption(): Int? {
     if (isInvalidInput) {
         println("Opcao invalida")
     }
-    //} while (isInvalidInput)
 
     return userOption
 }
@@ -73,28 +71,37 @@ fun criaTerreno(
     mostraLegendaHorizontal: Boolean,
     mostraLegendaVertical: Boolean
 ): String {
-    var lineCount = 1
+    var lineCount = 0
     var boardText = "\n"
     val numColunas = terreno[0].size
     val numLinhas = terreno.size
     val threeEmptySpacesConst = "   "
 
     if (contadoresHorizontais != null) {
-        boardText += "$threeEmptySpacesConst| ${createHorizontalCountersToBoard(contadoresHorizontais)}\n"
+        boardText += "${createHorizontalCountersToBoard(contadoresHorizontais)}\n"
     }
     if (mostraLegendaHorizontal) {
         boardText += "$threeEmptySpacesConst| ${criaLegendaHorizontal(numColunas)}\n"
     }
 
-    while (lineCount <= numLinhas) {
+    while (lineCount < numLinhas) {
         if (contadoresVerticais != null) {
-            boardText += "${contadoresVerticais[lineCount]?.toString() ?: " "}"
+            boardText += contadoresVerticais[lineCount]?.toString() ?: " "
         }
 
-        boardText += createColumnsForMap(terreno, numColunas, lineCount, mostraLegendaVertical)
+        if (mostraLegendaVertical) {
+            val lineNumber = lineCount+1
+            val isSingleDigitLine = lineNumber in 1..9
+            boardText += when (isSingleDigitLine) {
+                true -> " $lineNumber"
+                false -> "$lineNumber"
+            }
+        }
+
+        boardText += createColumnsForMap(terreno, numColunas, lineCount)
 
         //Break every line except the last one
-        if (lineCount != numLinhas) {
+        if (lineCount != numLinhas-1) {
             boardText += "\n"
         }
 
@@ -170,10 +177,10 @@ fun validaDataNascimento(data: String?): String? {
 
 fun validaTamanhoMapa(numLinhas: Int, numColunas: Int): Boolean {
 
-    return when (numColunas) {
-        6 -> numLinhas == 5 || numLinhas == 6
-        8 -> numLinhas == 8 || numLinhas == 10
-        10 -> numLinhas == 8 || numLinhas == 10
+    return when (numLinhas) {
+        6 -> numColunas == 5 || numColunas == 6
+        8 -> numColunas == 8 || numColunas == 10
+        10 -> numColunas == 8 || numColunas == 10
         else -> false
     }
 }
@@ -194,25 +201,13 @@ fun processaCoordenadas(coordenadasStr: String?, numLines: Int, numColumns: Int)
     return null
 }
 
-fun mapHorizontalCoordToInt(coordCharCode :Int, lastCharCode :Int) :Int?{
-    if (lastCharCode >= coordCharCode){
-        return 'F'.code - 'A'.code
-    }
-
-    return null
-}
-
 fun leContadoresDoFicheiro(numLines: Int, numColumns: Int, verticais: Boolean): Array<Int?> {
     val boardFile = readBoardFromFile(numLines, numColumns)
 
     //0 is the position of vertical counters
     //1 is the position of Horizontal counters
-    val countersFilePosition = if (verticais) {
-        0
-    } else {
-        1
-    }
-    val countersSplitAsStrings = boardFile[countersFilePosition].split(',')
+    val countersFileIndex = if (verticais) { 1 } else { 0 }
+    val countersSplitAsStrings = boardFile[countersFileIndex].split(',')
     val countersAsInts = arrayOfNulls<Int>(countersSplitAsStrings.size)
 
     var countersIdx = 0
@@ -251,18 +246,36 @@ fun leTerrenoDoFicheiro(numLines: Int, numColumns: Int): Array<Array<String?>> {
 }
 
 fun createHorizontalCountersToBoard(contadoresHorizontais: Array<Int?>?): String {
-    val fiveEmptySpacesConst = "     "
-    val threeEmptySpacesConst = "   "
-    var horizontalCountersStr = "${fiveEmptySpacesConst}"
+    var horizontalCountersStr = "   "
 
     if (contadoresHorizontais != null) {
-        for (contador in contadoresHorizontais) {
-            if (contador == null) {
-                horizontalCountersStr += "${threeEmptySpacesConst}"
+        var counterIdx = 0
+        while (counterIdx < contadoresHorizontais.size){
+            horizontalCountersStr+= " " //Espaço por cima dos pipes
+            if (contadoresHorizontais[counterIdx] == null) {
+                horizontalCountersStr += "  "
             } else {
-                horizontalCountersStr += " ${contador} "
+                horizontalCountersStr += " ${contadoresHorizontais[counterIdx]}"
             }
+            val isLastCounter = counterIdx == contadoresHorizontais.size-1
+            if (!isLastCounter){
+                horizontalCountersStr+= " " //Espaço depois do numero, excepto no ultimo contador
+            }
+
+            counterIdx++
         }
+//        for (contador in contadoresHorizontais) {
+//            horizontalCountersStr+= " " //Espaço por cima dos pipes
+//            if (contador == null) {
+//                horizontalCountersStr += "  "
+//            } else {
+//                horizontalCountersStr += " ${contador}"
+//            }
+//            val isLastCounter = contador == contadoresHorizontais[contadoresHorizontais.size-1]
+//            if (!isLastCounter){
+//                horizontalCountersStr+= " " //Espaço depois do numero, excepto no ultimo contador
+//            }
+//        }
     }
 
     return horizontalCountersStr
@@ -272,30 +285,20 @@ fun createColumnsForMap(
     terreno: Array<Array<String?>>,
     numColunas: Int,
     lineCount: Int,
-    mostraLegendaVertical: Boolean
 ): String {
-    var columnCount = 1
+    var columnCount = 0
     val tentChar = '\u25B3'
-    val boardSpaces = "   "
-    val treeSlotChar = " A "
-    val isSingleDigitLine = lineCount in 1..9
+    val emptyBoardSpace = " "
+    val treeSlotChar = "A"
 
     var columnText = ""
 
-    while (columnCount <= numColunas) {
-        val isLastColumn = columnCount == numColunas
-
-        if (mostraLegendaVertical) {
-            columnText += when (isSingleDigitLine) {
-                true -> " $lineCount |"
-                false -> "$lineCount |"
-            }
-        }
-
+    while (columnCount < numColunas) {
+        val isLastColumn = columnCount == numColunas-1
         val isTreeSlot = terreno[lineCount][columnCount] == "A"
-        val fieldContent = if (isTreeSlot) {treeSlotChar} else {boardSpaces}
+        val fieldContent = if (isTreeSlot) { treeSlotChar } else {emptyBoardSpace}
 
-        columnText += if (isLastColumn) "|${fieldContent}" else "|$fieldContent|"
+        columnText += if (isLastColumn) "| ${fieldContent}" else "| $fieldContent "
         columnCount++
     }
 
@@ -310,7 +313,7 @@ fun askBirthDate():String?{
 }
 
 fun getUserBirthDateForHardMap():String?{
-    var birthDateText :String? = null
+    var birthDateText :String?
 
     do {
         birthDateText = askBirthDate()
