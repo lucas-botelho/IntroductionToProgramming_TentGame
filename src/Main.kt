@@ -12,7 +12,6 @@ const val twoEmptySpacesConst = "  "
 const val endGameMessage = "Parabens! Terminou o jogo!"
 
 fun main() {
-    println(leContadoresDoFicheiro(8, 8, true))
     runGame()
 }
 
@@ -97,7 +96,7 @@ fun drawMenuAndGetUserOption(): Int? {
 fun drawBoard(totalLines: Int, totalColumns: Int, terreno: Array<Array<String?>>) {
     val verticalCountersFromFile = leContadoresDoFicheiro(totalLines, totalColumns, true)
     val horizontalCountersFromFile = leContadoresDoFicheiro(totalLines, totalColumns, false)
-    println("\n${criaTerreno(terreno, null, horizontalCountersFromFile, true, false)}")
+    println("\n${criaTerreno(terreno, verticalCountersFromFile, horizontalCountersFromFile, true, true)}")
 }
 
 fun criaMenu(): String {
