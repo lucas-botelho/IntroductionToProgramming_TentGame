@@ -12,6 +12,7 @@ const val twoEmptySpacesConst = "  "
 const val endGameMessage = "Parabens! Terminou o jogo!"
 
 fun main() {
+//    println(criaLegendaContadoresHorizontal(arrayOf(null,1,1,null,1,2)))
     runGame()
 }
 
@@ -132,25 +133,19 @@ fun criaTerreno(
     val numColunas = terreno[0].size
     val numLinhas = terreno.size
 
-    val initialSpacing = if (mostraLegendaVertical && contadoresVerticais != null){
-        fiveEmptySpacesConst
-    } else if (contadoresVerticais != null) {
-        twoEmptySpacesConst
-    } else if (mostraLegendaVertical){
-        threeEmptySpacesConst
-    } else {
-        ""
-    }
     if (contadoresHorizontais != null) {
-        boardText += "$initialSpacing  ${criaLegendaContadoresHorizontal(contadoresHorizontais)}\n"
+        boardText += "$fiveEmptySpacesConst  ${criaLegendaContadoresHorizontal(contadoresHorizontais)}\n"
     }
     if (mostraLegendaHorizontal) {
-        boardText += "$initialSpacing| ${criaLegendaHorizontal(numColunas)}\n"
+        boardText += "$fiveEmptySpacesConst| ${criaLegendaHorizontal(numColunas)}\n"
     }
 
     while (lineCount < numLinhas) {
         if (contadoresVerticais != null) {
-            boardText += "$initialSpacing${contadoresVerticais[lineCount]?.toString() ?: " "} "
+            boardText += "${contadoresVerticais[lineCount]?.toString() ?: " "} "
+        }
+        else{
+            boardText += twoEmptySpacesConst
         }
 
         if (mostraLegendaVertical) {
@@ -160,6 +155,9 @@ fun criaTerreno(
                 true -> " $lineNumber "
                 false -> "$lineNumber "
             }
+        }
+        else{
+            boardText+=threeEmptySpacesConst
         }
 
         boardText += createColumnsForMap(terreno, numColunas, lineCount)
