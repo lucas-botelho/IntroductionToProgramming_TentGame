@@ -7,9 +7,16 @@ const val constInvalidOption = "Resposta invalida"
 const val constInvalidCoords = "Coordenadas invalidas"
 const val constInvalidTentPlacement = "Tenda nao pode ser colocada nestas coordenadas"
 const val fiveEmptySpacesConst = "     "
+const val threeEmptySpacesConst = "   "
+const val twoEmptySpacesConst = "  "
 const val endGameMessage = "Parabens! Terminou o jogo!"
 
 fun main() {
+//    runGame()
+    temArvoreAdjacente(arrayOf(arrayOf("A",null)), Pair(0,1))
+}
+
+fun runGame (){
     do {
         var userOption = drawMenuAndGetUserOption()
         if (userOption != null && userOption == 1) {
@@ -90,7 +97,7 @@ fun drawMenuAndGetUserOption(): Int? {
 fun drawBoard(totalLines: Int, totalColumns: Int, terreno: Array<Array<String?>>) {
     val verticalCountersFromFile = leContadoresDoFicheiro(totalLines, totalColumns, true)
     val horizontalCountersFromFile = leContadoresDoFicheiro(totalLines, totalColumns, false)
-    println(criaTerreno(terreno, verticalCountersFromFile, horizontalCountersFromFile, true, true))
+    println("\n${criaTerreno(terreno, verticalCountersFromFile, horizontalCountersFromFile, true, true)}")
 }
 
 fun criaMenu(): String {
@@ -122,15 +129,24 @@ fun criaTerreno(
     mostraLegendaVertical: Boolean
 ): String {
     var lineCount = 0
-    var boardText = "\n"
+    var boardText = ""
     val numColunas = terreno[0].size
     val numLinhas = terreno.size
 
+    val initialSpacing = if (mostraLegendaVertical && contadoresVerticais != null){
+        fiveEmptySpacesConst
+    } else if (contadoresVerticais != null) {
+        twoEmptySpacesConst
+    } else if (mostraLegendaVertical){
+        threeEmptySpacesConst
+    } else {
+        ""
+    }
     if (contadoresHorizontais != null) {
-        boardText += "${criaLegendaContadoresHorizontal(contadoresHorizontais)}\n"
+        boardText += "$initialSpacing ${criaLegendaContadoresHorizontal(contadoresHorizontais)}\n"
     }
     if (mostraLegendaHorizontal) {
-        boardText += "$fiveEmptySpacesConst| ${criaLegendaHorizontal(numColunas)}\n"
+        boardText += "$initialSpacing| ${criaLegendaHorizontal(numColunas)}\n"
     }
 
     while (lineCount < numLinhas) {
@@ -276,7 +292,7 @@ fun leContadoresDoFicheiro(numLines: Int, numColumns: Int, verticais: Boolean): 
 }
 
 fun readBoardFromFile(numLines: Int, numColumns: Int): List<String> {
-    return File("./ficheiros-jogo-tendas-main/${numLines}x${numColumns}.txt").readLines()
+    return File("./${numLines}x${numColumns}.txt").readLines()
 }
 
 fun leTerrenoDoFicheiro(numLines: Int, numColumns: Int): Array<Array<String?>> {
@@ -297,12 +313,14 @@ fun leTerrenoDoFicheiro(numLines: Int, numColumns: Int): Array<Array<String?>> {
 }
 
 fun criaLegendaContadoresHorizontal(contadoresHorizontal: Array<Int?>?): String {
-    var horizontalCountersStr = "     "
+    var horizontalCountersStr = ""
 
     if (contadoresHorizontal != null) {
         var counterIdx = 0
         while (counterIdx < contadoresHorizontal.size) {
-            horizontalCountersStr += " " //Espaço por cima dos pipes
+            if (counterIdx != 0){
+                horizontalCountersStr += " " //Espaço por cima dos pipes
+            }
             if (contadoresHorizontal[counterIdx] == null) {
                 horizontalCountersStr += "  "
             } else {
@@ -455,6 +473,7 @@ fun checkIfHasEntityWhenCornerCoords(
     coords: Pair<Int, Int>,
     entityString: String
 ): Boolean {
+
     val line = coords.first
     val column = coords.second
     val nextLine = line + 1
@@ -485,7 +504,7 @@ fun checkIfHasEntityWhenCornerCoords(
     }
     //(MAX,MAX)
     else if (isLastLine && isLastColumn) {
-        hasEntityOnTop = terreno[previousLine][column] == entityString
+       hasEntityOnTop = terreno[previousLine][column] == entityString
         hasEntityOnLeft = terreno[line][previousColumn] == entityString
     }
     //(MAX,0)
