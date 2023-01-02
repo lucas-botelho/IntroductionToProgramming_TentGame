@@ -1,11 +1,15 @@
 import java.io.File
 
-const val treesChar = "A"
+const val treeIcon = '\u25B3'
+const val arrayTreeChar = "A"
 const val arrayTentChar = "T"
+const val constInvalidOption = "Resposta invalida"
+const val constInvalidCoords = "Coordenadas invalidas"
+const val constInvalidTentPlacement = "Tenda nao pode ser colocada nestas coordenadas"
+const val fiveEmptySpacesConst = "     "
+const val endGameMessage = "Parabens! Terminou o jogo!"
 
 fun main() {
-    val constInvalidOption = "Resposta invalida"
-
     do {
         var userOption = drawMenuAndGetUserOption()
         if (userOption != null && userOption == 1) {
@@ -15,26 +19,60 @@ fun main() {
             val isHardMap = totalLines == 10 && totalColumns == 10
 
             if (isValidMap) {
-                val birthDateText = if (isHardMap) { getUserBirthDateForHardMap() } else { null }
-                if (birthDateText == null) {
-                    drawBoard(totalLines, totalColumns)
-
-                    println("Coordenadas da tenda? (ex: 1,B)")
-                    val coord = readln()
-
-                    if (coord.lowercase() == "sair"){
-                        userOption = 0
-                    }
-                    else{
-                        val validatedCoords = processaCoordenadas(coord, totalLines, totalColumns)
-                    }
+                val birthDateText = if (isHardMap) {
+                    getUserBirthDateForHardMap()
+                } else {
+                    null
                 }
-            }
-            else {
+                if (birthDateText == null) {
+                    val terreno = leTerrenoDoFicheiro(totalLines, totalColumns)
+                    var gameEnded = false
+                    var showBoard = true
+
+                    while (!gameEnded) {
+                        if (showBoard) {
+                            drawBoard(totalLines, totalColumns, terreno)
+                        }
+                        val userInputCoords = getUserPlayInput()
+
+                        if (userInputCoords.lowercase() == "sair") {
+                            userOption = 0
+                        } else {
+                            val proccessedCoords = processaCoordenadas(userInputCoords, totalLines, totalColumns)
+
+                            if (proccessedCoords == null) {
+                                print(constInvalidCoords)
+                            } else {
+                                val line = proccessedCoords.first
+                                val column = proccessedCoords.second
+                                if (colocaTenda(terreno, proccessedCoords)) {
+                                    terreno[line][column] = when (terreno[line][column]) {
+                                        arrayTentChar -> null
+                                        else -> arrayTentChar
+                                    }
+                                    showBoard = true
+                                    val verticalCounters = leContadoresDoFicheiro(totalLines, totalColumns, true)
+                                    val horizontalCounters = leContadoresDoFicheiro(totalLines, totalColumns, false)
+                                    gameEnded = terminouJogo(terreno, verticalCounters, horizontalCounters)
+                                } else {
+                                    println(constInvalidTentPlacement)
+                                    showBoard = false
+                                }
+                            }
+                        }
+                    }
+                    println(endGameMessage)
+                }
+            } else {
                 println("Terreno invalido")
             }
         }
     } while (userOption != 0)
+}
+
+fun getUserPlayInput(): String {
+    println("Coordenadas da tenda? (ex: 1,B)")
+    return readln()
 }
 
 fun drawMenuAndGetUserOption(): Int? {
@@ -49,11 +87,10 @@ fun drawMenuAndGetUserOption(): Int? {
     return userOption
 }
 
-fun drawBoard(totalLines :Int, totalColumns :Int){
-    val terrainFromFile = leTerrenoDoFicheiro(totalLines, totalColumns)
+fun drawBoard(totalLines: Int, totalColumns: Int, terreno: Array<Array<String?>>) {
     val verticalCountersFromFile = leContadoresDoFicheiro(totalLines, totalColumns, true)
     val horizontalCountersFromFile = leContadoresDoFicheiro(totalLines, totalColumns, false)
-    println(criaTerreno(terrainFromFile, verticalCountersFromFile, horizontalCountersFromFile, true, true))
+    println(criaTerreno(terreno, verticalCountersFromFile, horizontalCountersFromFile, true, true))
 }
 
 fun criaMenu(): String {
@@ -77,18 +114,23 @@ fun getUserBoardRowsSettings(requestText: String, errorText: String): Int {
     return rows ?: 0
 }
 
-fun criaTerreno(terreno:Array<Array<String?>>,contadoresVerticais: Array<Int?>?, contadoresHorizontais: Array<Int?>?, mostraLegendaHorizontal: Boolean, mostraLegendaVertical: Boolean): String {
+fun criaTerreno(
+    terreno: Array<Array<String?>>,
+    contadoresVerticais: Array<Int?>?,
+    contadoresHorizontais: Array<Int?>?,
+    mostraLegendaHorizontal: Boolean,
+    mostraLegendaVertical: Boolean
+): String {
     var lineCount = 0
     var boardText = "\n"
     val numColunas = terreno[0].size
     val numLinhas = terreno.size
-    val threeEmptySpacesConst = "     "
 
     if (contadoresHorizontais != null) {
-        boardText += "${createHorizontalCountersToBoard(contadoresHorizontais)}\n"
+        boardText += "${criaLegendaContadoresHorizontal(contadoresHorizontais)}\n"
     }
     if (mostraLegendaHorizontal) {
-        boardText += "$threeEmptySpacesConst| ${criaLegendaHorizontal(numColunas)}\n"
+        boardText += "$fiveEmptySpacesConst| ${criaLegendaHorizontal(numColunas)}\n"
     }
 
     while (lineCount < numLinhas) {
@@ -97,7 +139,7 @@ fun criaTerreno(terreno:Array<Array<String?>>,contadoresVerticais: Array<Int?>?,
         }
 
         if (mostraLegendaVertical) {
-            val lineNumber = lineCount+1
+            val lineNumber = lineCount + 1
             val isSingleDigitLine = lineNumber in 1..9
             boardText += when (isSingleDigitLine) {
                 true -> " $lineNumber "
@@ -108,7 +150,7 @@ fun criaTerreno(terreno:Array<Array<String?>>,contadoresVerticais: Array<Int?>?,
         boardText += createColumnsForMap(terreno, numColunas, lineCount)
 
         //Break every line except the last one
-        if (lineCount != numLinhas-1) {
+        if (lineCount != numLinhas - 1) {
             boardText += "\n"
         }
 
@@ -138,9 +180,6 @@ fun criaLegendaHorizontal(numColunas: Int): String {
 fun validaDataNascimento(data: String?): String? {
     var result: String? = "Data invalida"
     var isCorrectDateFormat = data != null && data.length == 10 && data[2] == '-' && data[5] == '-'
-
-    //if (data == "")
-    //    return null
 
     if (data != null && isCorrectDateFormat) {
         val day = "${data[0]}${data[1]}".toIntOrNull()
@@ -191,18 +230,18 @@ fun validaTamanhoMapa(numLinhas: Int, numColunas: Int): Boolean {
     }
 }
 
-fun processaCoordenadas(coordenadasStr: String?, numLines: Int, numColumns: Int):  Pair<Int,Int>?
-{
-    if (coordenadasStr != null && (coordenadasStr.length == 3 || coordenadasStr.length == 4)) {
+fun processaCoordenadas(coordenadasStr: String?, numLines: Int, numColumns: Int): Pair<Int, Int>? {
+    if (coordenadasStr != null && (coordenadasStr.length in 3..4)) {
         val mapHeaderLabel = criaLegendaHorizontal(numColumns)
         val lastCharCode = mapHeaderLabel[mapHeaderLabel.length - 1].code
         val headerFirstCharCode = 'A'.code
-        val isValidLineCoord = coordenadasStr[0].digitToIntOrNull() != null && coordenadasStr[0].digitToIntOrNull() in 1..numLines
+        val isValidLineCoord =
+            coordenadasStr[0].digitToIntOrNull() != null && coordenadasStr[0].digitToIntOrNull() in 1..numLines
         val isValidColumnCoord = coordenadasStr[2].uppercaseChar().code in headerFirstCharCode..lastCharCode
 
-        if(isValidLineCoord && isValidColumnCoord){
+        if (isValidLineCoord && isValidColumnCoord) {
             val lineCoord = coordenadasStr[0].toString().toInt() - 1
-            val columnCoord = coordenadasStr[2].code - headerFirstCharCode
+            val columnCoord = coordenadasStr[2].uppercaseChar().code - headerFirstCharCode
             return Pair(lineCoord, columnCoord)
         }
     }
@@ -214,7 +253,11 @@ fun leContadoresDoFicheiro(numLines: Int, numColumns: Int, verticais: Boolean): 
 
     //0 is the position of vertical counters
     //1 is the position of Horizontal counters
-    val countersFileIndex = if (verticais) { 1 } else { 0 }
+    val countersFileIndex = if (verticais) {
+        1
+    } else {
+        0
+    }
     val countersSplitAsStrings = boardFile[countersFileIndex].split(',')
     val countersAsInts = arrayOfNulls<Int>(countersSplitAsStrings.size)
 
@@ -246,28 +289,28 @@ fun leTerrenoDoFicheiro(numLines: Int, numColumns: Int): Array<Array<String?>> {
         val treeCoords = boardFile[coordIndex].split(',')
         val line = treeCoords[0].toInt()
         val column = treeCoords[1].toInt()
-        board[line][column] = treesChar
+        board[line][column] = arrayTreeChar
         coordIndex++
     }
 
     return board
 }
 
-fun createHorizontalCountersToBoard(contadoresHorizontais: Array<Int?>?): String {
+fun criaLegendaContadoresHorizontal(contadoresHorizontal: Array<Int?>?): String {
     var horizontalCountersStr = "     "
 
-    if (contadoresHorizontais != null) {
+    if (contadoresHorizontal != null) {
         var counterIdx = 0
-        while (counterIdx < contadoresHorizontais.size){
-            horizontalCountersStr+= " " //Espaço por cima dos pipes
-            if (contadoresHorizontais[counterIdx] == null) {
+        while (counterIdx < contadoresHorizontal.size) {
+            horizontalCountersStr += " " //Espaço por cima dos pipes
+            if (contadoresHorizontal[counterIdx] == null) {
                 horizontalCountersStr += "  "
             } else {
-                horizontalCountersStr += " ${contadoresHorizontais[counterIdx]}"
+                horizontalCountersStr += " ${contadoresHorizontal[counterIdx]}"
             }
-            val isLastCounter = counterIdx == contadoresHorizontais.size-1
-            if (!isLastCounter){
-                horizontalCountersStr+= " " //Espaço depois do numero, excepto no ultimo contador
+            val isLastCounter = counterIdx == contadoresHorizontal.size - 1
+            if (!isLastCounter) {
+                horizontalCountersStr += " " //Espaço depois do numero, excepto no ultimo contador
             }
 
             counterIdx++
@@ -277,21 +320,20 @@ fun createHorizontalCountersToBoard(contadoresHorizontais: Array<Int?>?): String
     return horizontalCountersStr
 }
 
-fun createColumnsForMap(terreno: Array<Array<String?>>, numColunas: Int, lineCount: Int,): String {
+fun createColumnsForMap(terreno: Array<Array<String?>>, numColunas: Int, lineCount: Int): String {
     var columnCount = 0
-    val tentChar = '\u25B3'
     val emptyBoardSpace = " "
 
     var columnText = ""
 
     while (columnCount < numColunas) {
-        val isLastColumn = columnCount == numColunas-1
-        val isTreeSlot = terreno[lineCount][columnCount] == treesChar
+        val isLastColumn = columnCount == numColunas - 1
+        val isTreeSlot = terreno[lineCount][columnCount] == arrayTreeChar
         val isTentSlot = terreno[lineCount][columnCount] == arrayTentChar
 
         val fieldContent = when {
-            isTreeSlot -> treesChar
-            isTentSlot -> tentChar
+            isTreeSlot -> treeIcon
+            isTentSlot -> arrayTentChar
             else -> emptyBoardSpace
         }
 
@@ -302,19 +344,19 @@ fun createColumnsForMap(terreno: Array<Array<String?>>, numColunas: Int, lineCou
     return columnText
 }
 
-fun askBirthDate():String?{
+fun askBirthDate(): String? {
     println("Qual a sua data de nascimento? (dd-mm-yyyy)")
     val birthDate = readln()
     //!= null means it's not a valid date
     return validaDataNascimento(birthDate)
 }
 
-fun getUserBirthDateForHardMap():String?{
-    var birthDateText :String?
+fun getUserBirthDateForHardMap(): String? {
+    var birthDateText: String?
 
     do {
         birthDateText = askBirthDate()
-        if (birthDateText != null){
+        if (birthDateText != null) {
             println(birthDateText)
         }
     } while (birthDateText != "Menor de idade nao pode jogar" && birthDateText != null)
@@ -322,229 +364,366 @@ fun getUserBirthDateForHardMap():String?{
     return birthDateText
 }
 
-fun colocaTenda(terreno: Array<Array<String?>>, coords: Pair<Int, Int>): Boolean{
-    val isValidPlacement = true
+fun colocaTenda(terreno: Array<Array<String?>>, coords: Pair<Int, Int>): Boolean {
 
-    if (terreno[coords.first][coords.second] == null){
-        terreno[coords.first][coords.second] = arrayTentChar
-    }
-    else if (terreno[coords.first][coords.second] == arrayTentChar){
-        terreno[coords.first][coords.second] = null
-    }
+    val isTreeSlot = terreno[coords.first][coords.second] == arrayTreeChar
+    val isTentSlot = terreno[coords.first][coords.second] == arrayTentChar
+    val isEmptySlot = terreno[coords.first][coords.second] == null
+    val isValidSlot = (isEmptySlot && temArvoreAdjacente(terreno, coords) && !temTendaAdjacente(terreno, coords))
 
-    return isValidPlacement
+    return (isTentSlot || isValidSlot) && !isTreeSlot
 }
 
-fun temArvoreAdjacente(terreno: Array<Array<String?>>, coords: Pair<Int, Int>) : Boolean {
-    val isFirstLine = coords.first - 1 >= 0
+fun temArvoreAdjacente(terreno: Array<Array<String?>>, coords: Pair<Int, Int>): Boolean {
+    val isFirstLine = coords.first == 0
     val isLastLine = coords.first + 1 == terreno.size
-    val isFirstColumn = coords.second - 1 >= 0
+    val isFirstColumn = coords.second == 0
     val isLastColumn = coords.second + 1 == terreno[0].size
-    
+
     var hasAdjacentTree = false
-    
-    val isCornerCoord = (isFirstLine && isLastColumn) || isFirstLine && isFirstColumn || (isLastLine && isLastColumn) || (isLastLine && isFirstColumn)
-    if (isCornerCoord){
-        hasAdjacentTree = checkIfHasEntityWhenCornerCoords(terreno, coords, treesChar)
-    }
-    
-    val isBottomOrTopSidesCoord = (isFirstLine && (!isFirstColumn || !isLastColumn)) || (isLastLine && (!isFirstColumn || !isLastColumn))
-    if (isBottomOrTopSidesCoord){
-        hasAdjacentTree = checkIfHasEntityWhenTopOrBottomCoords(terreno, coords, treesChar)
+
+    val isCornerCoord =
+        (isFirstLine && isLastColumn) || (isFirstLine && isFirstColumn) || (isLastLine && isLastColumn) || (isLastLine && isFirstColumn)
+    if (isCornerCoord) {
+        hasAdjacentTree = checkIfHasEntityWhenCornerCoords(terreno, coords, arrayTreeChar)
     }
 
-    val isLeftOrRightSidesCoord = (isFirstColumn && (!isFirstLine || !isLastLine)) || (isLastColumn && (!isFirstLine || !isLastLine))
-    if (isLeftOrRightSidesCoord){
-        hasAdjacentTree = checkIfHasEntityWhenLeftOrRightCoords(terreno, coords, treesChar)
+    val isBottomOrTopSidesCoord = (isFirstLine && !isCornerCoord) || (isLastLine && !isCornerCoord)
+    if (isBottomOrTopSidesCoord) {
+        hasAdjacentTree = checkIfHasEntityWhenTopOrBottomCoords(terreno, coords, arrayTreeChar)
     }
-    
+
+    val isLeftOrRightSidesCoord = (isFirstColumn && !isCornerCoord) || (isLastColumn && !isCornerCoord)
+    if (isLeftOrRightSidesCoord) {
+        hasAdjacentTree = checkIfHasEntityWhenLeftOrRightCoords(terreno, coords, arrayTreeChar)
+    }
+
     val isCenterCoord = !isCornerCoord && !isBottomOrTopSidesCoord && !isLeftOrRightSidesCoord
-    if (isCenterCoord){
-        hasAdjacentTree = checkIfHasEntityWhenCenterCoords(terreno, coords, treesChar)
+    if (isCenterCoord) {
+        hasAdjacentTree = checkIfHasEntityWhenCenterCoords(terreno, coords, arrayTreeChar)
     }
-    
+
     return hasAdjacentTree
 }
-fun temTendaAdjacente(terreno: Array<Array<String?>>, coords: Pair<Int, Int>) : Boolean {
-    val isFirstLine = coords.first - 1 >= 0
+
+fun temTendaAdjacente(terreno: Array<Array<String?>>, coords: Pair<Int, Int>): Boolean {
+    val isFirstLine = coords.first == 0
     val isLastLine = coords.first + 1 == terreno.size
-    val isFirstColumn = coords.second - 1 >= 0
+    val isFirstColumn = coords.second == 0
     val isLastColumn = coords.second + 1 == terreno[0].size
 
     var hasAdjacentTent = false
 
-    val isCornerCoord = (isFirstLine && isLastColumn) || isFirstLine && isFirstColumn || (isLastLine && isLastColumn) || (isLastLine && isFirstColumn)
-    if (isCornerCoord){
+    val isCornerCoord =
+        (isFirstLine && isLastColumn) || isFirstLine && isFirstColumn || (isLastLine && isLastColumn) || (isLastLine && isFirstColumn)
+    if (isCornerCoord) {
         hasAdjacentTent = checkIfHasEntityWhenCornerCoords(terreno, coords, arrayTentChar)
+        if (!hasAdjacentTent) {
+            hasAdjacentTent = checkDiagonallyIfHasEntityWhenCornerCoords(terreno, coords, arrayTentChar)
+        }
     }
 
-    val isBottomOrTopSidesCoord = (isFirstLine && (!isFirstColumn || !isLastColumn)) || (isLastLine && (!isFirstColumn || !isLastColumn))
-    if (isBottomOrTopSidesCoord){
+    val isBottomOrTopSidesCoord = (isFirstLine && !isCornerCoord) || (isLastLine && !isCornerCoord)
+    if (isBottomOrTopSidesCoord) {
         hasAdjacentTent = checkIfHasEntityWhenTopOrBottomCoords(terreno, coords, arrayTentChar)
+        if (!hasAdjacentTent) {
+            hasAdjacentTent = checkDiagonallyIfHasEntityWhenTopOrBottomCoords(terreno, coords, arrayTentChar)
+        }
     }
 
-    val isLeftOrRightSidesCoord = (isFirstColumn && (!isFirstLine || !isLastLine)) || (isLastColumn && (!isFirstLine || !isLastLine))
-    if (isLeftOrRightSidesCoord){
+    val isLeftOrRightSidesCoord = (isFirstColumn && !isCornerCoord) || (isLastColumn && !isCornerCoord)
+    if (isLeftOrRightSidesCoord) {
         hasAdjacentTent = checkIfHasEntityWhenLeftOrRightCoords(terreno, coords, arrayTentChar)
+        if (!hasAdjacentTent) {
+            hasAdjacentTent = checkDiagonallyIfHasEntityWhenLeftOrRightCoords(terreno, coords, arrayTentChar)
+        }
     }
 
     val isCenterCoord = !isCornerCoord && !isBottomOrTopSidesCoord && !isLeftOrRightSidesCoord
-    if (isCenterCoord){
+    if (isCenterCoord) {
         hasAdjacentTent = checkIfHasEntityWhenCenterCoords(terreno, coords, arrayTentChar)
+        if (!hasAdjacentTent) {
+            hasAdjacentTent = checkDiagonallyIfHasEntityWhenCenterCoords(terreno, coords, arrayTentChar)
+        }
     }
 
     return hasAdjacentTent
 }
 
-fun checkIfHasEntityWhenCornerCoords(terreno: Array<Array<String?>>, coords: Pair<Int, Int>, entityString:String) : Boolean{
+fun checkIfHasEntityWhenCornerCoords(
+    terreno: Array<Array<String?>>,
+    coords: Pair<Int, Int>,
+    entityString: String
+): Boolean {
     val line = coords.first
     val column = coords.second
-    val nextLine = line+1
-    val nextColumn = column+1
-    val previousLine = line-1
-    val previousColumn = column-1
+    val nextLine = line + 1
+    val nextColumn = column + 1
+    val previousLine = line - 1
+    val previousColumn = column - 1
 
-    val isFirstLine = coords.first - 1 >= 0
+    val isFirstLine = coords.first == 0
     val isLastLine = coords.first + 1 == terreno.size
-    val isFirstColumn = coords.second - 1 >= 0
+    val isFirstColumn = coords.second == 0
     val isLastColumn = coords.second + 1 == terreno[0].size
 
-    var hasTreeOnRight = false
-    var hasTreeOnLeft = false
-    var hasTreeOnTop = false
-    var hasTreeOnBottom = false
+    var hasEntityOnRight = false
+    var hasEntityOnLeft = false
+    var hasEntityOnTop = false
+    var hasEntityOnBottom = false
 
 
     //(0,MAX)
-    if (isFirstLine && isLastColumn){
-        hasTreeOnLeft = terreno[line][previousColumn] == entityString
-        hasTreeOnBottom = terreno[nextLine][column] == entityString
+    if (isFirstLine && isLastColumn) {
+        hasEntityOnLeft = terreno[line][previousColumn] == entityString
+        hasEntityOnBottom = terreno[nextLine][column] == entityString
     }
     //(0,0)
-    else if(isFirstLine && isFirstColumn){
-        hasTreeOnRight = terreno[line][nextColumn] == entityString
-        hasTreeOnBottom = terreno[nextLine][column] == entityString
+    else if (isFirstLine && isFirstColumn) {
+        hasEntityOnRight = terreno[line][nextColumn] == entityString
+        hasEntityOnBottom = terreno[nextLine][column] == entityString
     }
     //(MAX,MAX)
     else if (isLastLine && isLastColumn) {
-        hasTreeOnTop = terreno[previousLine][column] == entityString
-        hasTreeOnLeft = terreno[line][previousColumn] == entityString
+        hasEntityOnTop = terreno[previousLine][column] == entityString
+        hasEntityOnLeft = terreno[line][previousColumn] == entityString
     }
     //(MAX,0)
-    else if (isLastLine && isFirstColumn){
-        hasTreeOnTop = terreno[previousLine][column] == entityString
-        hasTreeOnRight = terreno[line][nextColumn] == entityString
+    else if (isLastLine && isFirstColumn) {
+        hasEntityOnTop = terreno[previousLine][column] == entityString
+        hasEntityOnRight = terreno[line][nextColumn] == entityString
     }
 
-    return hasTreeOnRight || hasTreeOnLeft || hasTreeOnTop || hasTreeOnBottom
+    return hasEntityOnRight || hasEntityOnLeft || hasEntityOnTop || hasEntityOnBottom
 }
-fun checkIfHasEntityWhenTopOrBottomCoords(terreno: Array<Array<String?>>, coords: Pair<Int, Int>, entityString:String) : Boolean{
+
+fun checkIfHasEntityWhenTopOrBottomCoords(
+    terreno: Array<Array<String?>>,
+    coords: Pair<Int, Int>,
+    entityString: String
+): Boolean {
     val line = coords.first
     val column = coords.second
-    val nextLine = line+1
-    val nextColumn = column+1
-    val previousLine = line-1
-    val previousColumn = column-1
+    val nextLine = line + 1
+    val nextColumn = column + 1
+    val previousLine = line - 1
+    val previousColumn = column - 1
 
-    val isFirstLine = coords.first - 1 >= 0
+    val isFirstLine = coords.first == 0
     val isLastLine = coords.first + 1 == terreno.size
-    val isFirstColumn = coords.second - 1 >= 0
-    val isLastColumn = coords.second + 1 == terreno[0].size
 
-
-    var hasTreeOnRight = false
-    var hasTreeOnLeft = false
-    var hasTreeOnTop = false
-    var hasTreeOnBottom = false
+    var hasEntityOnRight = false
+    var hasEntityOnLeft = false
+    var hasEntityOnTop = false
+    var hasEntityOnBottom = false
 
     //(0,ANY)
-    if (isFirstLine && (!isFirstColumn || !isLastColumn)){
-        hasTreeOnBottom = terreno[nextLine][column] == entityString
-        hasTreeOnLeft = terreno[line][previousColumn] == entityString
-        hasTreeOnRight = terreno[line][nextColumn] == entityString
+    if (isFirstLine) {
+        hasEntityOnBottom = terreno[nextLine][column] == entityString
+        hasEntityOnLeft = terreno[line][previousColumn] == entityString
+        hasEntityOnRight = terreno[line][nextColumn] == entityString
 
     }
     //(MAX,ANY)
-    else if (isLastLine && (!isFirstColumn || !isLastColumn)){
-        hasTreeOnLeft = terreno[line][previousColumn] == entityString
-        hasTreeOnRight = terreno[line][nextColumn] == entityString
-        hasTreeOnTop = terreno[previousLine][column] == entityString
+    else if (isLastLine) {
+        hasEntityOnLeft = terreno[line][previousColumn] == entityString
+        hasEntityOnRight = terreno[line][nextColumn] == entityString
+        hasEntityOnTop = terreno[previousLine][column] == entityString
     }
 
-    return hasTreeOnRight || hasTreeOnLeft || hasTreeOnTop || hasTreeOnBottom
+    return hasEntityOnRight || hasEntityOnLeft || hasEntityOnTop || hasEntityOnBottom
 }
-fun checkIfHasEntityWhenLeftOrRightCoords(terreno: Array<Array<String?>>, coords: Pair<Int, Int>, entityString:String) : Boolean{
+
+fun checkIfHasEntityWhenLeftOrRightCoords(
+    terreno: Array<Array<String?>>,
+    coords: Pair<Int, Int>,
+    entityString: String
+): Boolean {
     val line = coords.first
     val column = coords.second
-    val nextLine = line+1
-    val nextColumn = column+1
-    val previousLine = line-1
-    val previousColumn = column-1
+    val nextLine = line + 1
+    val nextColumn = column + 1
+    val previousLine = line - 1
+    val previousColumn = column - 1
 
-    val isFirstLine = coords.first - 1 >= 0
-    val isLastLine = coords.first + 1 == terreno.size
-    val isFirstColumn = coords.second - 1 >= 0
+    val isFirstColumn = coords.second == 0
     val isLastColumn = coords.second + 1 == terreno[0].size
 
-
-    var hasTreeOnRight = false
-    var hasTreeOnLeft = false
-    var hasTreeOnTop = false
-    var hasTreeOnBottom = false
+    var hasEntityOnRight = false
+    var hasEntityOnLeft = false
+    val hasEntityOnTop = terreno[previousLine][column] == entityString
+    val hasEntityOnBottom = terreno[nextLine][column] == entityString
 
     //(ANY,0)
-    if (isFirstColumn && (!isFirstLine || !isLastLine)){
-        hasTreeOnBottom = terreno[nextLine][column] == entityString
-        hasTreeOnLeft = terreno[line][previousColumn] == entityString
-        hasTreeOnRight = terreno[line][nextColumn] == entityString
+    if (isFirstColumn) {
+        hasEntityOnRight = terreno[line][nextColumn] == entityString
 
     }
     //(ANY,MAX)
-    else if (isLastColumn && (!isFirstLine || !isLastLine)){
-        hasTreeOnLeft = terreno[line][previousColumn] == entityString
-        hasTreeOnRight = terreno[line][nextColumn] == entityString
-        hasTreeOnTop = terreno[previousLine][column] == entityString
+    else if (isLastColumn) {
+        hasEntityOnLeft = terreno[line][previousColumn] == entityString
     }
 
-    return hasTreeOnRight || hasTreeOnLeft || hasTreeOnTop || hasTreeOnBottom
+    return hasEntityOnRight || hasEntityOnLeft || hasEntityOnTop || hasEntityOnBottom
 }
-fun checkIfHasEntityWhenCenterCoords(terreno: Array<Array<String?>>, coords: Pair<Int, Int>, entityString:String) : Boolean{
+
+fun checkIfHasEntityWhenCenterCoords(
+    terreno: Array<Array<String?>>,
+    coords: Pair<Int, Int>,
+    entityString: String
+): Boolean {
     val line = coords.first
     val column = coords.second
-    val nextLine = line+1
-    val nextColumn = column+1
-    val previousLine = line-1
-    val previousColumn = column-1
+    val nextLine = line + 1
+    val nextColumn = column + 1
+    val previousLine = line - 1
+    val previousColumn = column - 1
 
-    val isFirstLine = coords.first - 1 >= 0
-    val isLastLine = coords.first + 1 == terreno.size
-    val isFirstColumn = coords.second - 1 >= 0
-    val isLastColumn = coords.second + 1 == terreno[0].size
+    val hasEntityOnTop = terreno[previousLine][column] == entityString
+    val hasEntityOnBottom = terreno[nextLine][column] == entityString
+    val hasEntityOnLeft = terreno[line][previousColumn] == entityString
+    val hasEntityOnRight = terreno[line][nextColumn] == entityString
 
-
-    var hasTreeOnRight = false
-    var hasTreeOnLeft = false
-    var hasTreeOnTop = false
-    var hasTreeOnBottom = false
-
-    //(ANY\0,MAX-1)
-    if (isFirstColumn && (!isFirstLine || !isLastLine)){
-        hasTreeOnTop = terreno[previousLine][column] == entityString
-        hasTreeOnBottom = terreno[nextLine][column] == entityString
-        hasTreeOnLeft = terreno[line][previousColumn] == entityString
-        hasTreeOnRight = terreno[line][nextColumn] == entityString
-
-    }
-
-    return hasTreeOnRight || hasTreeOnLeft || hasTreeOnTop || hasTreeOnBottom
+    return hasEntityOnRight || hasEntityOnLeft || hasEntityOnTop || hasEntityOnBottom
 }
 
-fun contaTendasColuna(terreno: Array<Array<String?>>, coluna : Int) : Int {
+fun checkDiagonallyIfHasEntityWhenCornerCoords(
+    terreno: Array<Array<String?>>,
+    coords: Pair<Int, Int>,
+    entityString: String
+): Boolean {
+    val line = coords.first
+    val column = coords.second
+    val nextLine = line + 1
+    val nextColumn = column + 1
+    val previousLine = line - 1
+    val previousColumn = column - 1
+
+    val isFirstLine = coords.first == 0
+    val isLastLine = coords.first + 1 == terreno.size
+    val isFirstColumn = coords.second == 0
+    val isLastColumn = coords.second + 1 == terreno[0].size
+
+    var hasEntityOnTopRight = false
+    var hasEntityOnBottomRight = false
+    var hasEntityOnTopLeft = false
+    var hasEntityOnBottomLeft = false
+
+
+    //(0,MAX)
+    if (isFirstLine && isLastColumn) {
+        hasEntityOnBottomLeft = terreno[nextLine][previousColumn] == entityString
+    }
+    //(0,0)
+    else if (isFirstLine && isFirstColumn) {
+        hasEntityOnBottomRight = terreno[nextLine][nextColumn] == entityString
+    }
+    //(MAX,MAX)
+    else if (isLastLine && isLastColumn) {
+        hasEntityOnTopLeft = terreno[previousLine][previousColumn] == entityString
+    }
+    //(MAX,0)
+    else if (isLastLine && isFirstColumn) {
+        hasEntityOnTopRight = terreno[previousLine][nextColumn] == entityString
+    }
+
+    return hasEntityOnTopRight || hasEntityOnTopLeft || hasEntityOnBottomLeft || hasEntityOnBottomRight
+}
+
+fun checkDiagonallyIfHasEntityWhenCenterCoords(
+    terreno: Array<Array<String?>>,
+    coords: Pair<Int, Int>,
+    entityString: String
+): Boolean {
+    val line = coords.first
+    val column = coords.second
+    val nextLine = line + 1
+    val nextColumn = column + 1
+    val previousLine = line - 1
+    val previousColumn = column - 1
+
+    val hasEntityOnBottomLeft = terreno[nextLine][previousColumn] == entityString
+    val hasEntityOnBottomRight = terreno[nextLine][nextColumn] == entityString
+    val hasEntityOnTopLeft = terreno[previousLine][previousColumn] == entityString
+    val hasEntityOnTopRight = terreno[previousLine][nextColumn] == entityString
+
+    return hasEntityOnTopRight || hasEntityOnTopLeft || hasEntityOnBottomLeft || hasEntityOnBottomRight
+}
+
+fun checkDiagonallyIfHasEntityWhenTopOrBottomCoords(
+    terreno: Array<Array<String?>>,
+    coords: Pair<Int, Int>,
+    entityString: String
+): Boolean {
+    val line = coords.first
+    val column = coords.second
+    val nextLine = line + 1
+    val nextColumn = column + 1
+    val previousLine = line - 1
+    val previousColumn = column - 1
+
+    val isFirstLine = coords.first == 0
+    val isLastLine = coords.first + 1 == terreno.size
+
+    var hasEntityOnTopRight = false
+    var hasEntityOnBottomRight = false
+    var hasEntityOnTopLeft = false
+    var hasEntityOnBottomLeft = false
+
+    //(0,ANY)
+    if (isFirstLine) {
+        hasEntityOnBottomLeft = terreno[nextLine][previousColumn] == entityString
+        hasEntityOnBottomRight = terreno[nextLine][nextColumn] == entityString
+    }
+    //(MAX,ANY)
+    else if (isLastLine) {
+        hasEntityOnTopLeft = terreno[previousLine][previousColumn] == entityString
+        hasEntityOnTopRight = terreno[previousLine][nextColumn] == entityString
+    }
+
+    return hasEntityOnTopRight || hasEntityOnTopLeft || hasEntityOnBottomRight || hasEntityOnBottomLeft
+}
+
+fun checkDiagonallyIfHasEntityWhenLeftOrRightCoords(
+    terreno: Array<Array<String?>>,
+    coords: Pair<Int, Int>,
+    entityString: String
+): Boolean {
+    val line = coords.first
+    val column = coords.second
+    val nextLine = line + 1
+    val nextColumn = column + 1
+    val previousLine = line - 1
+    val previousColumn = column - 1
+
+    val isFirstColumn = coords.second == 0
+    val isLastColumn = coords.second + 1 == terreno[0].size
+
+    var hasEntityOnTopRight = false
+    var hasEntityOnBottomRight = false
+    var hasEntityOnTopLeft = false
+    var hasEntityOnBottomLeft = false
+
+    //(ANY,0)
+    if (isFirstColumn) {
+        hasEntityOnTopRight = terreno[previousLine][nextColumn] == entityString
+        hasEntityOnBottomRight = terreno[nextLine][nextColumn] == entityString
+    }
+    //(ANY,MAX)
+    else if (isLastColumn) {
+        hasEntityOnTopLeft = terreno[previousLine][previousColumn] == entityString
+        hasEntityOnBottomLeft = terreno[nextLine][previousColumn] == entityString
+    }
+
+    return hasEntityOnBottomLeft || hasEntityOnTopLeft || hasEntityOnBottomRight || hasEntityOnTopRight
+}
+
+fun contaTendasColuna(terreno: Array<Array<String?>>, coluna: Int): Int {
     var count = 0
 
-    for (row in terreno.indices){
-        for (col in terreno[row].indices){
-            if (col == coluna && terreno[row][col] == arrayTentChar){
+    for (row in terreno.indices) {
+        for (col in terreno[row].indices) {
+            if (col == coluna && terreno[row][col] == arrayTentChar) {
                 count++
             }
 
@@ -554,19 +733,114 @@ fun contaTendasColuna(terreno: Array<Array<String?>>, coluna : Int) : Int {
     return count
 }
 
-fun contaTendasLinha(terreno: Array<Array<String?>>, linha : Int) : Int {
+fun contaTendasLinha(terreno: Array<Array<String?>>, linha: Int): Int {
     var count = 0
 
-    for (row in terreno.indices){
-        if (row == linha){
-            for (col in terreno[row].indices){
-                if (terreno[row][col] == arrayTentChar){
+    for (row in terreno.indices) {
+        if (row == linha) {
+            for (col in terreno[row].indices) {
+                if (terreno[row][col] == arrayTentChar) {
                     count++
                 }
             }
         }
-
     }
+
 
     return count
 }
+
+fun terminouJogo(
+    terreno: Array<Array<String?>>,
+    contadoresVerticais: Array<Int?>,
+    contadoresHorizontais: Array<Int?>
+): Boolean {
+    val numLines = terreno.size
+    val numColumns = terreno[0].size
+    var gameEnded = false
+    val boardFile = readBoardFromFile(numLines, numColumns)
+    val boardFileSize = boardFile.size
+    var treesHaveAdjacentTent: Boolean
+
+    var treeCoordIndex = 2 //2 because the first two lines are for counters
+    do {
+        val treeCoords = boardFile[treeCoordIndex].split(',')
+        val line = treeCoords[0].toInt()
+        val column = treeCoords[1].toInt()
+
+        val coords = Pair(line, column)
+        treesHaveAdjacentTent = treeHasAdjacentTent(terreno, coords)
+
+        treeCoordIndex++
+    } while (treesHaveAdjacentTent && treeCoordIndex < boardFileSize)
+
+    if (treesHaveAdjacentTent) {
+        var lineIndex = 0
+        var lineHasCorrectAmountOfTents: Boolean
+
+        do {
+            val totalTentsOnLine = contaTendasLinha(terreno, lineIndex)
+
+            lineHasCorrectAmountOfTents = if (contadoresVerticais[lineIndex] == null && totalTentsOnLine == 0) {
+                true
+            } else {
+                contadoresVerticais[lineIndex] == totalTentsOnLine
+            }
+
+            lineIndex++
+
+        } while (lineHasCorrectAmountOfTents && lineIndex < numLines)
+
+        var columnIndex = 0
+        var columnHasCorrectAmountOfTents: Boolean
+
+        do {
+            val totalTentsOnColumn = contaTendasColuna(terreno, columnIndex)
+
+            columnHasCorrectAmountOfTents = if (contadoresHorizontais[columnIndex] == null && totalTentsOnColumn == 0) {
+                true
+            } else {
+                contadoresHorizontais[columnIndex] == totalTentsOnColumn
+            }
+
+            columnIndex++
+        } while (columnHasCorrectAmountOfTents && columnIndex < numColumns)
+
+        gameEnded = columnHasCorrectAmountOfTents && lineHasCorrectAmountOfTents
+    }
+
+    return gameEnded
+}
+
+fun treeHasAdjacentTent(terreno: Array<Array<String?>>, coords: Pair<Int, Int>): Boolean {
+    val isFirstLine = coords.first == 0
+    val isLastLine = coords.first + 1 == terreno.size
+    val isFirstColumn = coords.second == 0
+    val isLastColumn = coords.second + 1 == terreno[0].size
+
+    var hasAdjacentTent = false
+
+    val isCornerCoord =
+        (isFirstLine && isLastColumn) || isFirstLine && isFirstColumn || (isLastLine && isLastColumn) || (isLastLine && isFirstColumn)
+    if (isCornerCoord) {
+        hasAdjacentTent = checkIfHasEntityWhenCornerCoords(terreno, coords, arrayTentChar)
+    }
+
+    val isBottomOrTopSidesCoord = (isFirstLine && !isCornerCoord) || (isLastLine && !isCornerCoord)
+    if (isBottomOrTopSidesCoord) {
+        hasAdjacentTent = checkIfHasEntityWhenTopOrBottomCoords(terreno, coords, arrayTentChar)
+    }
+
+    val isLeftOrRightSidesCoord = (isFirstColumn && !isCornerCoord) || (isLastColumn && !isCornerCoord)
+    if (isLeftOrRightSidesCoord) {
+        hasAdjacentTent = checkIfHasEntityWhenLeftOrRightCoords(terreno, coords, arrayTentChar)
+    }
+
+    val isCenterCoord = !isCornerCoord && !isBottomOrTopSidesCoord && !isLeftOrRightSidesCoord
+    if (isCenterCoord) {
+        hasAdjacentTent = checkIfHasEntityWhenCenterCoords(terreno, coords, arrayTentChar)
+    }
+
+    return hasAdjacentTent
+}
+
