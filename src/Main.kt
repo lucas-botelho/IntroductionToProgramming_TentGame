@@ -12,7 +12,6 @@ const val twoEmptySpacesConst = "  "
 const val endGameMessage = "Parabens! Terminou o jogo!"
 
 fun main() {
-//    println(criaLegendaContadoresHorizontal(arrayOf(null,1,1,null,1,2)))
     runGame()
 }
 
@@ -68,7 +67,7 @@ fun runGame (){
                             }
                         }
                     }
-                    println(endGameMessage)
+                    println("\n$endGameMessage")
                 }
             } else {
                 println("Terreno invalido")
@@ -141,7 +140,7 @@ fun criaTerreno(
     }
 
     while (lineCount < numLinhas) {
-        if (contadoresVerticais != null) {
+        if (contadoresVerticais != null && lineCount in contadoresVerticais.indices) {
             boardText += "${contadoresVerticais[lineCount]?.toString() ?: " "} "
         }
         else{
@@ -315,9 +314,11 @@ fun criaLegendaContadoresHorizontal(contadoresHorizontal: Array<Int?>?): String 
     if (contadoresHorizontal != null) {
         var counterIdx = 0
         while (counterIdx < contadoresHorizontal.size) {
+            //Espaço por cima dos pipes
             if (horizontalCountersStr != ""){
-                horizontalCountersStr += " " //Espaço por cima dos pipes
+                horizontalCountersStr += " "
             }
+            //Espaço + espaço no lugar do numero
             if (contadoresHorizontal[counterIdx] == null) {
                 horizontalCountersStr += "  "
             } else {
@@ -329,7 +330,7 @@ fun criaLegendaContadoresHorizontal(contadoresHorizontal: Array<Int?>?): String 
                 }
             }
             val isLastCounter = counterIdx == contadoresHorizontal.size - 1
-            if (!isLastCounter) {
+            if (!isLastCounter && horizontalCountersStr != "  ") {
                 horizontalCountersStr += " " //Espaço depois do numero, excepto no ultimo contador
             }
 
@@ -422,8 +423,8 @@ fun checkIfLocationIsValidAndHasEntity(terreno: Array<Array<String?>>, line :Int
                     val isTopRight = lineIndex == previousLine && columnIndex == nextColumn
                     val isBottomLeft = lineIndex == nextLine && columnIndex == previousColumn
                     val isBottomRight = lineIndex == nextLine && columnIndex == nextColumn
-
-                    if (!(entityChar == arrayTreeChar && (isTopLeft || isTopRight || isBottomLeft || isBottomRight)) && !isSelf){
+                    val isDiagonal = isTopLeft || isTopRight || isBottomLeft || isBottomRight
+                    if (!(entityChar == arrayTreeChar && (isDiagonal)) && !isSelf){
                         if (terreno[lineIndex][columnIndex] == entityChar){
                             return true
                         }
